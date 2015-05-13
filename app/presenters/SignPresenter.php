@@ -21,7 +21,8 @@ final class SignPresenter extends BasePresenter
 	 * @param string|NULL
 	 */
 	public function renderIn($backlink)
-	{
+	{				
+				
 		$httpRequest = $this->getHttpRequest();
 
 		$referer = NULL;

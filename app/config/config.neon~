@@ -1,0 +1,155 @@
+#
+# SECURITY WARNING: it is CRITICAL that this file & directory are NOT accessible directly via a web browser!
+#
+# If you don't protect this directory from direct web access, anybody will be able to see your passwords.
+# http://nette.org/security-warning
+#
+
+php:
+	date.timezone: Europe/Prague
+
+
+parameters:
+	pagesSourceUrl: 'https://github.com/nette/web-content/archive/addons-portal.zip'
+	pagesDataPath: '%appDir%/data/pages'
+
+	uploadUri: '/upload'
+	uploadDir: '%wwwDir%%uploadUri%'
+	httpRequestTimeout: 5000 # v ms
+	ghApiVersion: beta
+	ghClientId: null
+	ghClientSecret: null
+	gravatarMaxRating: pg
+
+nette:
+	application:
+		errorPresenter: 'Error'
+		mapping:
+			*: NetteAddons\*\*Presenter
+
+	session:
+		expiration: '+ 14 days'
+		autoStart: true
+
+	container:
+		debugger: true
+
+	database:
+		default:
+			dsn: '%database.driver%:host=%database.host%;dbname=%database.dbname%'
+			user: %database.user%
+			password: %database.password%
+
+
+
+services:
+	packageRouterHelper: NetteAddons\Model\PackageRouteHelperCached
+	vendorRouteHelper: NetteAddons\Model\VendorRouteHelper
+
+	- NetteAddons\RouterFactory
+	router: @NetteAddons\RouterFactory::createRouter
+
+	# security
+	authenticator: NetteAddons\Model\Authenticator
+	authorizator: NetteAddons\Model\Authorizator
+
+	# view
+	- NetteAddons\TextProcessors\PageProcessor
+	- NetteAddons\TextProcessors\TexyProcessor
+	- NetteAddons\TextProcessors\MarkdownProcessor(%tempDir%/cache)
+	- NetteAddons\TextProcessors\CommonMarkProcessor
+	- NetteAddons\TextProcessors\ParseDownProcessor
+	textPreprocessor:
+		class: NetteAddons\TextPreprocessor
+		setup:
+			- addProcessor(@NetteAddons\TextProcessors\TexyProcessor, NetteAddons\TextPreprocessor::FORMAT_TEXY)
+			- addProcessor(@NetteAddons\TextProcessors\MarkdownProcessor, NetteAddons\TextPreprocessor::FORMAT_MARKDOWN)
+			- addProcessor(@NetteAddons\TextProcessors\CommonMarkProcessor, NetteAddons\TextPreprocessor::FORMAT_COMMONMARK)
+			- addProcessor(@NetteAddons\TextProcessors\ParseDownProcessor, NetteAddons\TextPreprocessor::FORMAT_PARSEDOWN)
+	helperLoader: NetteAddons\HelperLoader(@textPreprocessor, %gravatarMaxRating%)
+
+	# tables
+	users: NetteAddons\Model\Users
+	addons: NetteAddons\Model\Addons
+	addonVersions: NetteAddons\Model\AddonVersions
+	addonVotes: NetteAddons\Model\AddonVotes
+	addonReports: NetteAddons\Model\AddonReports
+	versionDependencies: NetteAddons\Model\VersionDependencies
+	tags: NetteAddons\Model\Tags
+
+	# facades
+	addonsManager:
+		class: NetteAddons\Model\Facade\AddonManageFacade
+		factory: NetteAddons\Model\Facade\AddonManageFacade::create(@session, @httpRequest::getUrl(), %uploadDir%, %uploadUri%)
+
+	# components
+	-
+		implement: NetteAddons\Components\IPagesControlFactory
+		class: NetteAddons\Components\PagesControl
+		arguments:
+			dataPath: %pagesDataPath%
+
+	# validators
+	licenses: NetteAddons\Model\Utils\Licenses
+	validators: NetteAddons\Model\Utils\Validators
+	formValidators: NetteAddons\Model\Utils\FormValidators
+
+	# importing from GitHub
+	httpStreamRequestFactory: NetteAddons\Utils\HttpStreamRequestFactory(%httpRequestTimeout%)
+	ghRepositoryFactory: NetteAddons\Model\Importers\GitHub\RepositoryFactory(%ghApiVersion%, @httpStreamRequestFactory, %ghClientId%, %ghClientSecret%)
+	ghImporterFactory: NetteAddons\Model\Importers\GitHubImporterFactory(@ghRepositoryFactory, @validators)
+	repositoryImporterManager:
+		class: NetteAddons\Model\Importers\RepositoryImporterManager
+		setup:
+			- addImporter(github, @ghImporterFactory, 'NetteAddons\Model\Importers\GitHubImporter')
+
+	# misc
+	versionParser: NetteAddons\Model\Utils\VersionParser
+
+	# form factories
+	addAddonForm:
+		class: NetteAddons\Manage\Forms\AddAddonFormFactory
+		setup:
+			- addDescriptionFormat('texy', 'Texy!')
+			- addDescriptionFormat('markdown', 'Markdown')
+			- addDescriptionFormat('commonmark', 'CommonMark')
+			- addDescriptionFormat('parsedown', 'Parsedown')
+	editAddonForm:
+		class: NetteAddons\Manage\Forms\EditAddonFormFactory
+		setup:
+			- addDescriptionFormat('texy', 'Texy!')
+			- addDescriptionFormat('markdown', 'Markdown')
+			- addDescriptionFormat('commonmark', 'CommonMark')
+	importAddonForm: NetteAddons\Manage\Forms\ImportAddonFormFactory
+	addAddonVersionForm: NetteAddons\Manage\Forms\AddVersionFormFactory
+	reportForm: NetteAddons\Forms\ReportFormFactory
+	manageReportForm: NetteAddons\Manage\Forms\ReportFormFactory
+
+	# Importers
+	importers.packagist:
+		class: NetteAddons\Model\Importers\AddonVersionImporters\PackagistImporter
+		arguments:
+			githubClientFactory: @ghRepositoryFactory
+	-
+		class: NetteAddons\Services\AddonUpdaterService
+		setup:
+			- addImporter(@importers.packagist)
+
+	# Presenters
+	-
+		class: NetteAddons\PagePresenter
+		arguments:
+			dataPath: %pagesDataPath%
+	-
+		class: NetteAddons\SpecialPresenter
+		arguments:
+			pagesDataPath: %pagesDataPath%
+
+	# Presenters Cron module
+	-
+		class: NetteAddons\Cli\Cron\PagesPresenter
+		arguments:
+			dataPath: %pagesDataPath%
+			sourceUrl: %pagesSourceUrl%
+			tempPath: %tempDir%
+			zipRootDirectory: 'web-content-addons-portal'

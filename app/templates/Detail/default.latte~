@@ -1,0 +1,22 @@
+{block content}
+	<div id="breadcrumbs">
+		<a href="http://nette.org">Home</a> »
+		<a n:href=":Homepage:">Addons, plugins and components</a> »
+		<a n:href=":List: vendor => $addon->composerVendor">By {$addon->composerVendor}</a> »
+		<span>{$addon->name}</span>
+	</div>
+
+	<p class="warning" n:if="!empty($addon->deletedAt)">This addon marked as deleted at {$addon->deletedAt|date:'H:i:s Y-m-d'}{if !empty($addon->deletedBy)} by {$addon->deletedBy->realname}{/if}</p>
+
+	<div n:class="addon-heading">
+		<h1>{$addon->name}<span class="addon-version">{$version->version}</span></h1>
+		<a class="addon-archive-link" n:href="versions">other versions</a>
+	</div>
+
+	{* <div n:if="!$version->netteVersion" class="warning">Addon does not specify required Nette version.</div> *}
+
+	<div class="emphasis addon-composer" n:if="$addon->type === \NetteAddons\Model\Addon::TYPE_COMPOSER">
+		<h2><span>Composer:</span>{$addon->composerFullName}</h2>
+	</div>
+
+{/block}

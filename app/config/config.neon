@@ -57,11 +57,15 @@ services:
 	- NetteAddons\TextProcessors\PageProcessor
 	- NetteAddons\TextProcessors\TexyProcessor
 	- NetteAddons\TextProcessors\MarkdownProcessor(%tempDir%/cache)
+	- NetteAddons\TextProcessors\CommonMarkProcessor
+	- NetteAddons\TextProcessors\ParseDownProcessor
 	textPreprocessor:
 		class: NetteAddons\TextPreprocessor
 		setup:
 			- addProcessor(@NetteAddons\TextProcessors\TexyProcessor, NetteAddons\TextPreprocessor::FORMAT_TEXY)
 			- addProcessor(@NetteAddons\TextProcessors\MarkdownProcessor, NetteAddons\TextPreprocessor::FORMAT_MARKDOWN)
+			- addProcessor(@NetteAddons\TextProcessors\CommonMarkProcessor, NetteAddons\TextPreprocessor::FORMAT_COMMONMARK)
+			- addProcessor(@NetteAddons\TextProcessors\ParseDownProcessor, NetteAddons\TextPreprocessor::FORMAT_PARSEDOWN)
 	helperLoader: NetteAddons\HelperLoader(@textPreprocessor, %gravatarMaxRating%)
 
 	# tables
@@ -108,11 +112,15 @@ services:
 		setup:
 			- addDescriptionFormat('texy', 'Texy!')
 			- addDescriptionFormat('markdown', 'Markdown')
+			- addDescriptionFormat('commonmark', 'CommonMark')
+			- addDescriptionFormat('parsedown', 'Parsedown')
 	editAddonForm:
 		class: NetteAddons\Manage\Forms\EditAddonFormFactory
 		setup:
 			- addDescriptionFormat('texy', 'Texy!')
 			- addDescriptionFormat('markdown', 'Markdown')
+			- addDescriptionFormat('commonmark', 'CommonMark')
+			- addDescriptionFormat('parsedown', 'Parsedown')
 	importAddonForm: NetteAddons\Manage\Forms\ImportAddonFormFactory
 	addAddonVersionForm: NetteAddons\Manage\Forms\AddVersionFormFactory
 	reportForm: NetteAddons\Forms\ReportFormFactory

@@ -25,7 +25,9 @@
 		"forxer/gravatar": "~1.1.2",
 		"guzzle/guzzle": "~3.9.0",
 		"knplabs/packagist-api": "~1.1.0",
-		"vrtak-cz/newrelic-nette": "~3.0.1"
+		"vrtak-cz/newrelic-nette": "~3.0.1",
+		"league/commonmark": "0.8.*@dev",
+		"erusev/parsedown": "1.5.3"
 	},
 	"require-dev": {
 		"jakub-onderka/php-parallel-lint": "~0.6.0",
